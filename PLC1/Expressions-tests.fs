@@ -26,6 +26,11 @@ let ``Evaluate a variable`` () =
     eval ev env |> should equal 11
 
 [<Test>]
+let ``Evaluate a non existing operator`` () =
+    let ev = Prim("A+", CstI 7, CstI 8)
+    (fun() -> eval ev env |> ignore) |> should throw typeof<System.Exception>
+
+[<Test>]
 let ``Evaluate an addition`` () =
     let ev = Prim("+", CstI 5, Var "a")
     eval ev env |> should equal 8
@@ -36,9 +41,33 @@ let ``Evaluate a subtraction`` () =
     eval ev env |> should equal 2
 
 [<Test>]
+let ``Evaluate a multiplication`` () =
+    let ev = Prim("*", CstI 5, Var "a")
+    eval ev env |> should equal 15
+
+[<Test>]
 let ``Evaluate maximum of two numbers`` () =
     let ev = Prim("max", CstI 5, Var "a")
     eval ev env |> should equal 5
 
+[<Test>]
+let ``Evaluate minimum of two numbers`` () =
+    let ev = Prim("min", CstI 5, Var "a")
+    eval ev env |> should equal 3
+
+[<Test>]
+let ``Two different numbers are not equal`` () =
+    let ev = Prim("==", CstI 5, Var "a")
+    eval ev env |> should equal 0
+
+[<Test>]
+let ``Evaluate condition that is true`` () =
+    let ev = If(Var "a", CstI 11, CstI 22)
+    eval ev env |> should equal 11
+
+[<Test>]
+let ``Evaluate condition that is false`` () =
+    let ev = If (CstI 0, CstI 11, CstI 22)
+    eval ev env |> should equal 22
 
 
