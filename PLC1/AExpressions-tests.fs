@@ -41,3 +41,48 @@ let ``Format a subtraction`` () =
 let ``Format a multiplication`` () =
     let ev = Mul(Var "x", CstI 34)
     fmt ev |> should equal "(x * 34)"
+
+[<Test>]
+let ``Simplify an addition with zero`` () =
+    let ev = Add(CstI 0, Var "x")
+    simplify ev |> should equal (Var "x")
+
+[<Test>]
+let ``Simplify reverse addition with zero`` () =
+    let ev = Add(Var "x", CstI 0)
+    simplify ev |> should equal (Var "x")
+
+[<Test>]
+let ``Simplify subtraction with zero`` () =
+    let ev = Sub(Var "x", CstI 0)
+    simplify ev |> should equal (Var "x")
+
+[<Test>]
+let ``Simplify multiplication with 1`` () =
+    let ev = Mul(CstI 1, Var "x")
+    simplify ev |> should equal (Var "x")
+
+[<Test>]
+let ``Simplify reverse multiplication with 1`` () =
+    let ev = Mul(Var "x", CstI 1)
+    simplify ev |> should equal (Var "x")
+
+[<Test>]
+let ``Simplify multiplication with 0`` () =
+    let ev = Mul(CstI 0, Var "x")
+    simplify ev |> should equal (CstI 0)
+
+[<Test>]
+let ``Simplify reverse multiplication with 0`` () =
+    let ev = Mul(Var "x", CstI 0)
+    simplify ev |> should equal (CstI 0)
+
+[<Test>]
+let ``Simplify equal subtraction`` () =
+    let ev = Sub(Var "x", Var "x")
+    simplify ev |> should equal (CstI 0)
+
+[<Test>]
+let ``Simplify with no effect`` () =
+    let ev = Sub(Var "x", Var "y")
+    simplify ev |> should equal (Sub(Var "x", Var "y"))
