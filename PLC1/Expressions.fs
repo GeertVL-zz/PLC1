@@ -4,12 +4,51 @@ type expr =
     | CstI of int
     | Var of string
     | Prim of string * expr * expr
+    | Let of string * expr * expr
     | If of expr * expr * expr
 
 let rec lookup env x =
     match env with
     | []           -> failwith (x + " not found")
     | (y, v)::r    -> if x=y then v else lookup r x 
+
+let rec lookOrSelf env x =
+    match env with
+    | [] -> Var x
+    | (y, e)::r -> if x=y then e else lookOrSelf r x
+
+let rec closedin (e : expr) (vs : string list) : bool =
+    match e with
+    | CstI i -> true
+    | Var x  -> List.exists (fun y -> x = y) vs
+    | Let(x, erhs, ebody) -> 
+        let vs1 = x :: vs
+        closedin erhs vs && closedin ebody vs1
+    | Prim(ope, e1, e2) -> closedin e1 vs && closedin e2 vs
+    
+let mem x vs = List.exists (fun y -> x=y) vs
+
+let rec union (xs, ys) =
+    match xs with
+    | [] -> ys
+    | x::xr -> if mem x ys then union(xr, ys)
+               else x :: union(xr, ys)
+
+let rec minus (xs , ys) =
+    match xs with
+    | [] -> []
+    | x :: xr -> if mem x ys then minus(xr, ys)
+                 else x :: minus (xr, ys)
+
+let rec freevars e : string list =
+    match e with 
+    | CstI i -> []
+    | Var x -> [x]
+    | Let(x, erhs, ebody) ->
+        union (freevars erhs, minus(freevars ebody, [x]))
+    | Prim(ope, e1, e2) -> union (freevars e1, freevars e2)
+
+let closed2 e = (freevars e = [])
 
 let rec eval (e : expr) (env: (string * int) list) : int =
     match e with
@@ -27,6 +66,23 @@ let rec eval (e : expr) (env: (string * int) list) : int =
         | "*"   -> eval e1 env * eval e2 env
         | _     -> failwith "operator does not exist"
     | If(e1, e2, e3) -> if (eval e1 env) <> 0 then eval e2 env else eval e3 env 
+    | Let(x, erhs, ebody) ->
+        let xval = eval erhs env
+        let env1 = (x, xval) :: env
+        eval ebody env1
 
+let rec remove env x =
+    match env with
+    | [] -> []
+    | (y, e)::r -> if x=y then r else (y, e) :: remove r x
 
+let rec nsubst (e : expr) (env : (string * expr) list) : expr =
+    match e with
+    | CstI i -> e
+    | Var x -> lookOrSelf env x
+    | Let (x, erhs, ebody) -> 
+        let newenv = remove env x
+        Let (x, nsubst erhs env, nsubst ebody newenv)
+    | Prim(ope, e1, e2) ->
+        Prim(ope, nsubst e1 env, nsubst e2 env)
 

@@ -70,4 +70,13 @@ let ``Evaluate condition that is false`` () =
     let ev = If (CstI 0, CstI 11, CstI 22)
     eval ev env |> should equal 22
 
+[<Test>]
+let ``Substitute a subtraction in an addition`` () =
+    let ev = Prim("+", Var "y", Var "z")
+    nsubst ev [("z", Prim("-", CstI 5, CstI 4))] |> should equal (Prim("+", Var "y", Prim("-", CstI 5, CstI 4)))
 
+[<Test>]
+let ``Substitute in a let``() =
+    let ev = Let("z", CstI 22, Prim("*", Var "y", Var "z"))
+    let senv = [("z", Prim("-", CstI 5, CstI 4))]
+    nsubst ev senv |> should equal (Let("z", CstI 22, Prim("*", Var "y", Var "z")))
