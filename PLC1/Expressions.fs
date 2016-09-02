@@ -86,3 +86,53 @@ let rec nsubst (e : expr) (env : (string * expr) list) : expr =
     | Prim(ope, e1, e2) ->
         Prim(ope, nsubst e1 env, nsubst e2 env)
 
+let newVar : string -> string =
+    let n = ref 0
+    let varMaker x = (n := 1 + !n; x + string (!n))
+    varMaker
+
+let rec subst (e : expr) (env : (string * expr) list) : expr =
+    match e with
+    | CstI i -> e
+    | Var x -> lookOrSelf env x
+    | Let(x, erhs, ebody) ->
+        let newx = newVar x
+        let newenv = (x, Var newx) :: remove env x
+        Let(newx, subst erhs env, subst ebody newenv)
+    | Prim(ope, e1, e2) -> Prim(ope, subst e1 env, subst e2 env)
+
+type texpr =
+    | TCstI of int
+    | TVar of int
+    | TLet of texpr * texpr
+    | TPrim of string * texpr * texpr
+
+let rec getindex env x = 
+    match env with 
+    | [] -> raise (Failure "Variable not found")
+    | y::yr -> if x=y then 0 else 1 + getindex yr x;
+
+let rec tcomp (e : expr) (cenv : string list) : texpr =
+    match e with
+    | CstI i -> TCstI i
+    | Var x -> TVar (getindex cenv x)
+    | Let(x, erhs, ebody) -> 
+        let cenv1 = x :: cenv
+        TLet(tcomp erhs cenv, tcomp ebody cenv1)
+    | Prim(ope, e1, e2) ->
+        TPrim(ope, tcomp e1 cenv, tcomp e2 cenv)
+
+let rec teval (e : texpr) (renv : int list) : int =
+    match e with
+    | TCstI i -> i
+    | TVar n -> List.nth renv n
+    | TLet(erhs, ebody) -> 
+        let xval = teval erhs renv
+        let renv1 = xval :: renv
+        teval ebody renv1
+    | TPrim("+", e1, e2) -> teval e1 renv + teval e2 renv
+    | TPrim("*", e1, e2) -> teval e1 renv * teval e2 renv
+    | TPrim("-", e1, e2) -> teval e1 renv - teval e2 renv
+    | TPrim _            -> failwith "unknown primitive"
+
+

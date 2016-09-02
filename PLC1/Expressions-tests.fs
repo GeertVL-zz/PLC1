@@ -80,3 +80,9 @@ let ``Substitute in a let``() =
     let ev = Let("z", CstI 22, Prim("*", Var "y", Var "z"))
     let senv = [("z", Prim("-", CstI 5, CstI 4))]
     nsubst ev senv |> should equal (Let("z", CstI 22, Prim("*", Var "y", Var "z")))
+
+[<Test>]
+let ``Substitute a free var`` () =
+    let ev = Let("z", CstI 22, Prim("*", Var "y", Var "z"))
+    let senv = subst ev [("y", Var "z")]
+    senv |> should equal (Let("z1", CstI 22, Prim("*", Var "z", Var "z1")))

@@ -57,6 +57,7 @@
     <Compile Include="Expressions-tests.fs" />
     <Content Include="packages.config" />
     <Compile Include="AExpressions-tests.fs" />
+    <Compile Include="Stack.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">
